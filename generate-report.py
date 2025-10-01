@@ -36,7 +36,7 @@ load_balancers = str(counts["load_balancer"])
 
 
 # write the report to text file
-with open('report.txt', 'w', encoding='utf-8') as f:
+with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("Nätverksrapport - " + data["company"] + "\n")
     f.write("="*50 + "\n")
     f.write("Senast uppdaterad: " + data["last_updated"] + "\n\n")
