@@ -8,7 +8,6 @@ data = json.load(open("network_devices.json","r",encoding = "utf-8"))
 devices_offline = ""
 devices_warning = ""
 counts = {"switch": 0, "router": 0, "access_point": 0, "load_balancer": 0}
-#switches = ""
 
 # Read out data on devices
 for location in data["locations"]:
