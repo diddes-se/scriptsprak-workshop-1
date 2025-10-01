@@ -8,6 +8,8 @@ data = json.load(open("network_devices.json","r",encoding = "utf-8"))
 devices_offline = ""
 devices_warning = ""
 counts = {"switch": 0, "router": 0, "access_point": 0, "load_balancer": 0}
+low_uptime = ""
+low_uptime_count= {"low_uptime": 0}
 
 # Read out data on devices
 for location in data["locations"]:
@@ -27,13 +29,15 @@ for location in data["locations"]:
             counts["access_point"] += +1
         if device.get("type") == "load_balancer":
             counts["load_balancer"] += +1
+        #list devices witn less than 30 days uptime
+        if device.get("uptime_days") <= 30:
+            low_uptime += ("  " + device["hostname"] + "  " + str(device["uptime_days"]) + " dagar" "\n")
 
 # Convert integers to string
 switches = str(counts["switch"])
 routers = str(counts["router"])
 access_points = str(counts["access_point"])
 load_balancers = str(counts["load_balancer"])
-
 
 # write the report to text file
 with open('network_report.txt', 'w', encoding='utf-8') as f:
@@ -51,4 +55,7 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("  Switch: " + switches + "\n")
     f.write("  Routrar: " + routers + "\n" )
     f.write("  Accesspunkter: " + access_points + "\n")
-    f.write("  Lastbalanserare: " + load_balancers + "\n")
+    f.write("  Lastbalanserare: " + load_balancers + "\n\n")
+    f.write("Enheter med mindre än 30 dagars uptime:" + "\n")
+    f.write("-"*30 + "\n")
+    f.write(low_uptime + "\n")
