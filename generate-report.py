@@ -32,7 +32,7 @@ for location in data["locations"]:
             counts["load_balancer"] += +1
         #list devices witn less than 30 days uptime
         if device.get("uptime_days") <= 30:
-            low_uptime += ("  " + device["hostname"].ljust(15) + "  " + str(device["uptime_days"]).rjust(2) + "\n")
+            low_uptime += ("  " + device["hostname"].ljust(20) + str(device["uptime_days"]).rjust(5) + "\n")
         # get the total number of switchports
         if "ports" in device:
             switchport_use["total"] += device["ports"]["total"]
@@ -76,13 +76,15 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write(devices_warning + "\n")
     f.write("Enheter med mindre än 30 dagars uptime:\n")
     f.write("-"*30 + "\n")
+    f.write("Hostname".ljust(22) + "Dagar".rjust(5) + "\n")
     f.write(low_uptime + "\n")
     f.write("Antal enheter:\n")
     f.write("-"*30 + "\n")
-    f.write("  Switchar: " + switches + "\n")
-    f.write("  Routrar: " + routers + "\n" )
-    f.write("  Accesspunkter: " + access_points + "\n")
-    f.write("  Lastbalanserare: " + load_balancers + "\n\n")
+    f.write("Enhetstyp".ljust(20) + "Antal" "\n")
+    f.write("  Switch:".ljust(20) + switches.rjust(5) + "\n")
+    f.write("  Router:".ljust(20) + routers.rjust(5) + "\n" )
+    f.write("  Accesspunkt:".ljust(20) + access_points.rjust(5) + "\n")
+    f.write("  Lastbalanserare:".ljust(20) + load_balancers.rjust(5) + "\n\n")
     f.write("portanvändning switchar:\n")
     f.write("-"*30 + "\n")
     f.write("  Totalt: " + switchport_use_total + "/" + switchport_total + " portar används (" + switchport_use_percentage_str + "%)" + "\n\n")
