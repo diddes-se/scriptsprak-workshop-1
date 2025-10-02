@@ -58,7 +58,11 @@ for location in data["locations"]:
         
         # List devices witn less than 30 days uptime
         if device.get("uptime_days") <= 30:
-            low_uptime += ("  " + device["hostname"].ljust(20) + str(device["uptime_days"]).rjust(5) + "\n")
+            low_uptime += ("  "
+                           + device["hostname"].ljust(20) 
+                           + location["site"].ljust(15)
+                           + str(device["uptime_days"]).rjust(2) + " dagar"  +"\n"
+                           )
         
         # get the total number of switchports
         if "ports" in device:
@@ -82,10 +86,11 @@ for location in data["locations"]:
     # Store temprary statistics
     status_count = {"online": 0, "offline": 0, "warning": 0}
     
+    # Count devices and save result in "status_count"
     for device in location["devices"]:
         
-
         status = device.get("status")
+        
         if status == "online":
             status_count["online"] += +1
 
@@ -131,7 +136,6 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write(devices_warning + "\n")
     f.write("Enheter med mindre än 30 dagars uptime:\n")
     f.write("-"*30 + "\n")
-    f.write("Hostname".ljust(22) + "Dagar".rjust(5) + "\n")
     f.write(low_uptime + "\n")
     f.write("Antal enheter:\n")
     f.write("-"*30 + "\n")
