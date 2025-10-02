@@ -63,16 +63,47 @@ for location in data["locations"]:
                            + location["site"].ljust(15)
                            + str(device["uptime_days"]).rjust(2) + " dagar"  +"\n"
                            )
-        
+     
         # get the total number of switchports
         if "ports" in device:
             switchport_use["total"] += device["ports"]["total"]
-            switchport_use["used_total"] += device["ports"]["used"]
-        
+            switchport_use["used_total"] += device["ports"]["used"]         
+
         # Get all VLANs used
         if "vlans" in device:
             vlan_used.update(device["vlans"])
         
+
+
+# Calculate port usage per site
+switchport_usage_site_parsed = ""
+
+for location in data["locations"]:
+
+    # store the number of switchports temporary
+    switchport_usage_site = {"total": 0, "used": 0}
+    
+    for device in location["devices"]:
+        
+
+
+        
+        if "ports" in device:
+            switchport_usage_site["total"] += device["ports"]["total"]
+            switchport_usage_site["used"] += device["ports"]["used"]
+
+            #witchport_usage_site_str = str(switchport_usage_site)
+        
+    switchport_usage_site_percent = (switchport_usage_site["used"] / switchport_usage_site["total"]) * 100
+    
+    # Round and convert to string
+    #switchport_use_site_percent_str = str(round(switchport_usage_site_percent))
+
+    switchport_usage_site_parsed += (location["site"].ljust(20) + " " 
+                                        + (str(switchport_usage_site["used"]) + "/" 
+                                        + str(switchport_usage_site["total"])).rjust(10) 
+                                        + str(round(switchport_usage_site_percent)).rjust(11) + "%\n" )    
+    
 
 # Enumerate devices and status per site
 device_location_and_status = ""
@@ -100,7 +131,7 @@ for location in data["locations"]:
         if status == "warning":
             status_count["warning"] += +1
 
-    device_location_and_status += ("  Antal enheter:" +str(len(location["devices"])).rjust(2)
+    device_location_and_status += ("  Antal enheter:" +str(len(location["devices"])).rjust(3)
                                    + " (Online: " + str(status_count["online"]) + ","
                                    + " Offline: "  + str(status_count["offline"]) + ","
                                    + " Warning: " + str(status_count["warning"]) +  ")\n\n"
@@ -120,7 +151,7 @@ access_points = str(counts["access_point"])
 load_balancers = str(counts["load_balancer"])
 switchport_total = str(switchport_use["total"])
 switchport_use_total = str(switchport_use["used_total"])
-switchport_use_percentage_str = str(int(switchport_use_percentage))
+switchport_use_percentage_str = str(round(switchport_use_percentage))
 vlan_sorted_str = ", ".join(map(str, vlan_sorted))
 
 # write the report to text file
@@ -140,10 +171,10 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("Antal enheter:\n")
     f.write("-"*30 + "\n")
     f.write("Enhetstyp".ljust(20) + "Antal" "\n")
-    f.write("  Switch:".ljust(20) + switches.rjust(5) + "\n")
-    f.write("  Router:".ljust(20) + routers.rjust(5) + "\n" )
-    f.write("  Accesspunkt:".ljust(20) + access_points.rjust(5) + "\n")
-    f.write("  Lastbalanserare:".ljust(20) + load_balancers.rjust(5) + "\n\n")
+    f.write("  Switch:".ljust(20) + switches.rjust(3) + "\n")
+    f.write("  Router:".ljust(20) + routers.rjust(3) + "\n" )
+    f.write("  Accesspunkt:".ljust(20) + access_points.rjust(3) + "\n")
+    f.write("  Lastbalanserare:".ljust(20) + load_balancers.rjust(3) + "\n\n")
     f.write("portanvändning switchar:\n")
     f.write("-"*30 + "\n")
     f.write("  Totalt: " + switchport_use_total + "/" + switchport_total + " portar används (" + switchport_use_percentage_str + "%)" + "\n\n")
@@ -153,4 +184,6 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("Statistik per site:\n")
     f.write("-"*30 + "\n")
     f.write(device_location_and_status)
-
+    f.write("Switchportanvändning:\n")
+    f.write("Site".ljust(18) + "Använt/Totalt" +  "  Användning" "\n")
+    f.write(switchport_usage_site_parsed)
