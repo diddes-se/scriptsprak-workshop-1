@@ -17,10 +17,30 @@ for location in data["locations"]:
     for device in location["devices"]:
         # List devices with status "offline"
         if device.get("status") == "offline":
-           devices_offline += ("  " + device["hostname"] + "\n")
+           devices_offline += ( "  " 
+                               + device["hostname"].ljust(20) 
+                               + device["ip_address"].ljust(20) 
+                               + device["type"].ljust(15) 
+                               + location["site"] + "\n")
         # List devices with status "warning"
         if device.get("status") == "warning":
-           devices_warning += ("  " + device["hostname"] + "\n")
+           # Check if device has low uptime
+            if device["uptime_days"] < 10:
+               devices_warning += ("  " 
+                                   + device["hostname"].ljust(20) 
+                                   + device["ip_address"].ljust(20) 
+                                   + device["type"].ljust(15) + location["site"].ljust(15) 
+                                   + str(device["uptime_days"]).rjust(2) + " dagar upptid\n"
+                                   )
+            # Check for high number of connected devices
+            if "connected_clients" in device and device["connected_clients"] > 30:
+               devices_warning += ("  " 
+                                   + device["hostname"].ljust(20) 
+                                   + device["ip_address"].ljust(20) 
+                                   + device["type"].ljust(15) 
+                                   + location["site"].ljust(15) 
+                                   + str(device["connected_clients"]).rjust(2) + " anslutna klienter\n"
+                                   )
         # Count the number of devices
         if device.get("type") == "switch":
             counts["switch"] += +1
@@ -30,7 +50,7 @@ for location in data["locations"]:
             counts["access_point"] += +1
         if device.get("type") == "load_balancer":
             counts["load_balancer"] += +1
-        #list devices witn less than 30 days uptime
+        # List devices witn less than 30 days uptime
         if device.get("uptime_days") <= 30:
             low_uptime += ("  " + device["hostname"].ljust(20) + str(device["uptime_days"]).rjust(5) + "\n")
         # get the total number of switchports
@@ -38,8 +58,6 @@ for location in data["locations"]:
             switchport_use["total"] += device["ports"]["total"]
             switchport_use["used_total"] += device["ports"]["used"]
         # Get all VLANs used
-        #for vlan in device["vlans"]:
-        #    vlan_used = vlan
         if "vlans" in device:
             vlan_used.update(device["vlans"])
 
