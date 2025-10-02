@@ -9,7 +9,8 @@ devices_offline = ""
 devices_warning = ""
 counts = {"switch": 0, "router": 0, "access_point": 0, "load_balancer": 0}
 low_uptime = ""
-low_uptime_count= {"low_uptime": 0}
+switchport_use= {"total": 0, "used_total": 0}
+vlan_used = set()
 
 # Read out data on devices
 for location in data["locations"]:
@@ -31,31 +32,61 @@ for location in data["locations"]:
             counts["load_balancer"] += +1
         #list devices witn less than 30 days uptime
         if device.get("uptime_days") <= 30:
-            low_uptime += ("  " + device["hostname"] + "  " + str(device["uptime_days"]) + " dagar" "\n")
+            low_uptime += ("  " + device["hostname"].ljust(15) + "  " + str(device["uptime_days"]).rjust(2) + "\n")
+        # get the total number of switchports
+        if "ports" in device:
+            switchport_use["total"] += device["ports"]["total"]
+            switchport_use["used_total"] += device["ports"]["used"]
+        # Get all VLANs used
+        #for vlan in device["vlans"]:
+        #    vlan_used = vlan
+        if "vlans" in device:
+            vlan_used.update(device["vlans"])
 
-# Convert integers to string
+
+
+
+
+# Calculate percentage of use
+switchport_use_percentage = (switchport_use["used_total"] / switchport_use["total"]) * 100
+
+#sort values in order
+vlan_sorted = sorted(vlan_used)
+
+# Convert integers to string for output in report file
 switches = str(counts["switch"])
 routers = str(counts["router"])
 access_points = str(counts["access_point"])
 load_balancers = str(counts["load_balancer"])
+switchport_total = str(switchport_use["total"])
+switchport_use_total = str(switchport_use["used_total"])
+switchport_use_percentage_str = str(int(switchport_use_percentage))
+vlan_sorted_str = str(vlan_sorted)
 
 # write the report to text file
 with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("Nätverksrapport - " + data["company"] + "\n")
     f.write("="*50 + "\n")
     f.write("Senast uppdaterad: " + data["last_updated"] + "\n\n")
-    f.write("Enheter med problem:" + "\n")
+    f.write("Enheter med problem:\n")
     f.write("-"*30 + "\n")
-    f.write("Status: OFFLINE" + "\n")
+    f.write("Status: OFFLINE\n")
     f.write(devices_offline + "\n")
-    f.write("Status: WARNING" + "\n")
+    f.write("Status: WARNING\n")
     f.write(devices_warning + "\n")
-    f.write("Enheter med mindre än 30 dagars uptime:" + "\n")
+    f.write("Enheter med mindre än 30 dagars uptime:\n")
     f.write("-"*30 + "\n")
     f.write(low_uptime + "\n")
     f.write("Antal enheter:\n")
     f.write("-"*30 + "\n")
-    f.write("  Switch: " + switches + "\n")
+    f.write("  Switchar: " + switches + "\n")
     f.write("  Routrar: " + routers + "\n" )
     f.write("  Accesspunkter: " + access_points + "\n")
     f.write("  Lastbalanserare: " + load_balancers + "\n\n")
+    f.write("portanvändning switchar:\n")
+    f.write("-"*30 + "\n")
+    f.write("  Totalt: " + switchport_use_total + "/" + switchport_total + " portar används (" + switchport_use_percentage_str + "%)" + "\n\n")
+    f.write("VLAN översikt\n")
+    f.write("-"*30 + "\n")
+    f.write("VLANs: " + vlan_sorted_str + "\n")
+
