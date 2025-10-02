@@ -69,15 +69,15 @@ for location in data["locations"]:
         if "vlans" in device:
             vlan_used.update(device["vlans"])
         
+
 # Enumerate devices and status per site
-
-
 device_location_and_status = ""
 
 for location in data["locations"]:
     
     device_location_and_status += (location["site"] +":" + "\n" 
-                                   + "  Huvudkontakt: " + location["contact"] + "\n")
+                                   + "  Huvudkontakt: " + location["contact"] + "\n"
+                                   )
 
     # Store temprary statistics
     status_count = {"online": 0, "offline": 0, "warning": 0}
@@ -98,7 +98,8 @@ for location in data["locations"]:
     device_location_and_status += ("  Antal enheter:" +str(len(location["devices"])).rjust(2)
                                    + " (Online: " + str(status_count["online"]) + ","
                                    + " Offline: "  + str(status_count["offline"]) + ","
-                                   + " Warning: " + str(status_count["warning"]) +  ")\n\n")
+                                   + " Warning: " + str(status_count["warning"]) +  ")\n\n"
+                                   )
 
 
 # Calculate percentage of use
@@ -115,7 +116,7 @@ load_balancers = str(counts["load_balancer"])
 switchport_total = str(switchport_use["total"])
 switchport_use_total = str(switchport_use["used_total"])
 switchport_use_percentage_str = str(int(switchport_use_percentage))
-vlan_sorted_str = str(vlan_sorted)
+vlan_sorted_str = ", ".join(map(str, vlan_sorted))
 
 # write the report to text file
 with open('network_report.txt', 'w', encoding='utf-8') as f:
