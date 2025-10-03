@@ -9,8 +9,11 @@ devices_offline = ""
 devices_warning = ""
 counts = {"switch": 0, "router": 0, "access_point": 0, "load_balancer": 0}
 low_uptime = ""
-switchport_use= {"total": 0, "used_total": 0}
+switchport_use = {"total": 0, "used_total": 0}
 vlan_used = set()
+device_location_and_status = ""
+summary_devices_with_problems = {"offline": 0, "warning": 0, "low_uptime": 0, "high_port_usage": 0, "high_client_use": 0}
+high_switchport_usage_per_device = ""
 device_location_and_status = ""
 
 # Read out data on devices
@@ -19,32 +22,43 @@ for location in data["locations"]:
         
         # List devices with status "offline"
         if device.get("status") == "offline":
-           devices_offline += ( "  " 
+            devices_offline += ( "  " 
                                + device["hostname"].ljust(20) 
                                + device["ip_address"].ljust(20) 
-                               + device["type"].ljust(15) 
+                               + (device["type"].replace("_", " ")).ljust(15) 
                                + location["site"] + "\n")
-        
-        # List devices with status "warning"
+            
+            # Add one to problem summary
+            summary_devices_with_problems["offline"] += +1
+
+            # List devices with status "warning"
         if device.get("status") == "warning":
-           # Check if device has low uptime
-            if device["uptime_days"] < 10:
-               devices_warning += ("  " 
+           
+            # Add one to problem summary
+            summary_devices_with_problems["warning"] += +1
+
+            # Check if device has low uptime
+            if device["uptime_days"] < 30:
+                devices_warning += ("  " 
                                    + device["hostname"].ljust(20) 
                                    + device["ip_address"].ljust(20) 
-                                   + device["type"].ljust(15) + location["site"].ljust(15) 
+                                   + (device["type"].replace("_", " ")).ljust(15) 
+                                   + location["site"].ljust(15) 
                                    + str(device["uptime_days"]).rjust(2) + " dagar upptid\n"
                                    )
-        
+                
             # Check for high number of connected devices
             if "connected_clients" in device and device["connected_clients"] > 30:
-               devices_warning += ("  " 
+                devices_warning += ("  " 
                                    + device["hostname"].ljust(20) 
                                    + device["ip_address"].ljust(20) 
-                                   + device["type"].ljust(15) 
+                                   + (device["type"].replace("_", " ")).ljust(15) 
                                    + location["site"].ljust(15) 
                                    + str(device["connected_clients"]).rjust(2) + " anslutna klienter\n"
                                    )
+                
+                # Add one to problem summary
+                summary_devices_with_problems["high_client_use"] += +1
         
         # Count the total number of devices
         if device.get("type") == "switch":
@@ -63,7 +77,10 @@ for location in data["locations"]:
                            + location["site"].ljust(15)
                            + str(device["uptime_days"]).rjust(2) + " dagar"  +"\n"
                            )
-     
+            
+            # Add one to problem summary
+            summary_devices_with_problems["low_uptime"] += +1
+
         # get the total number of switchports
         if "ports" in device:
             switchport_use["total"] += device["ports"]["total"]
@@ -73,9 +90,28 @@ for location in data["locations"]:
         if "vlans" in device:
             vlan_used.update(device["vlans"])
         
+        # Identify problems
+        if "ports" in device:
+
+            port_usage_calc = {"used": 0, "total": 0}
+
+            port_usage_calc["used"] += device["ports"]["used"]
+            port_usage_calc["total"] += device["ports"]["total"]
+
+            if (port_usage_calc["used"] / port_usage_calc["total"]) * 100 > 80:
+                
+                # Add one to problem summary
+                summary_devices_with_problems["low_uptime"] += +1
+                
+                high_switchport_usage_per_device += ("  " + device["hostname"].ljust(15) + " " 
+                                                    + location["site"].ljust(15) 
+                                                    + (str(port_usage_calc["used"]) + "/" + str(port_usage_calc["total"])).rjust(8) + " "
+                                                    + (str(round(((port_usage_calc["used"] / port_usage_calc["total"]) * 100), 1)) + "%").rjust(7) + "\n"
+                                                    ) 
 
 
-# Calculate port usage per site
+
+# Store switchport usage per site
 switchport_usage_site_parsed = ""
 
 for location in data["locations"]:
@@ -84,34 +120,22 @@ for location in data["locations"]:
     switchport_usage_site = {"total": 0, "used": 0}
     
     for device in location["devices"]:
-        
-
-
-        
+                
         if "ports" in device:
             switchport_usage_site["total"] += device["ports"]["total"]
             switchport_usage_site["used"] += device["ports"]["used"]
 
-            #witchport_usage_site_str = str(switchport_usage_site)
-        
-    switchport_usage_site_percent = (switchport_usage_site["used"] / switchport_usage_site["total"]) * 100
-    
-    # Round and convert to string
-    #switchport_use_site_percent_str = str(round(switchport_usage_site_percent))
-
-    switchport_usage_site_parsed += (location["site"].ljust(20) + " " 
-                                        + (str(switchport_usage_site["used"]) + "/" 
-                                        + str(switchport_usage_site["total"])).rjust(10) 
-                                        + str(round(switchport_usage_site_percent)).rjust(11) + "%\n" )    
+   
+    switchport_usage_site_parsed += ( "  " + location["site"].ljust(20) + " " 
+                                        + (str(switchport_usage_site["used"]) + "/" + str(switchport_usage_site["total"])).rjust(8) 
+                                        + str(round((switchport_usage_site["used"] / switchport_usage_site["total"]) * 100)).rjust(11) + "%\n" ) 
     
 
-# Enumerate devices and status per site
-device_location_and_status = ""
-
+# Enumerate devices and status per site (Using a new loop for more easy readable code)
 for location in data["locations"]:
     
-    device_location_and_status += (location["site"] +":" + "\n" 
-                                   + "  Huvudkontakt: " + location["contact"] + "\n"
+    device_location_and_status += ( "  " + location["site"] +":" + "\n" 
+                                   + "    Huvudkontakt: " + location["contact"] + "\n"
                                    )
 
     # Store temprary statistics
@@ -131,34 +155,22 @@ for location in data["locations"]:
         if status == "warning":
             status_count["warning"] += +1
 
-    device_location_and_status += ("  Antal enheter:" +str(len(location["devices"])).rjust(3)
+    device_location_and_status += ("    Antal enheter:" +str(len(location["devices"])).rjust(3)
                                    + " (Online: " + str(status_count["online"]) + ","
                                    + " Offline: "  + str(status_count["offline"]) + ","
                                    + " Warning: " + str(status_count["warning"]) +  ")\n\n"
                                    )
 
 
-# Calculate percentage of use
-switchport_use_percentage = (switchport_use["used_total"] / switchport_use["total"]) * 100
 
-#sort values in order
-vlan_sorted = sorted(vlan_used)
 
-# Convert integers to string for output in report file
-switches = str(counts["switch"])
-routers = str(counts["router"])
-access_points = str(counts["access_point"])
-load_balancers = str(counts["load_balancer"])
-switchport_total = str(switchport_use["total"])
-switchport_use_total = str(switchport_use["used_total"])
-switchport_use_percentage_str = str(round(switchport_use_percentage))
-vlan_sorted_str = ", ".join(map(str, vlan_sorted))
+
 
 # write the report to text file
 with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("Nätverksrapport - " + data["company"] + "\n")
     f.write("="*50 + "\n")
-    f.write("Senast uppdaterad: " + data["last_updated"] + "\n\n")
+    f.write("Senast uppdaterad: " + data["last_updated"].replace("T", " ") + "\n\n")
     f.write("Enheter med problem:\n")
     f.write("-"*30 + "\n")
     f.write("Status: OFFLINE\n")
@@ -168,22 +180,26 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("Enheter med mindre än 30 dagars uptime:\n")
     f.write("-"*30 + "\n")
     f.write(low_uptime + "\n")
+    f.write("Switchar med hög portanvändning (>80%)\n")
+    f.write("-"*30 + "\n")
+    f.write(high_switchport_usage_per_device + "\n\n")
     f.write("Antal enheter:\n")
     f.write("-"*30 + "\n")
-    f.write("Enhetstyp".ljust(20) + "Antal" "\n")
-    f.write("  Switch:".ljust(20) + switches.rjust(3) + "\n")
-    f.write("  Router:".ljust(20) + routers.rjust(3) + "\n" )
-    f.write("  Accesspunkt:".ljust(20) + access_points.rjust(3) + "\n")
-    f.write("  Lastbalanserare:".ljust(20) + load_balancers.rjust(3) + "\n\n")
-    f.write("portanvändning switchar:\n")
+    f.write("  Enhetstyp".ljust(18) + "Antal" "\n")
+    f.write("  Switch:".ljust(20) + (str(counts["switch"])).rjust(3) + "\n")
+    f.write("  Router:".ljust(20) + (str(counts["router"])).rjust(3) + "\n" )
+    f.write("  Accesspunkt:".ljust(20) + (str(counts["access_point"])).rjust(3) + "\n")
+    f.write("  Lastbalanserare:".ljust(20) + (str(counts["load_balancer"])).rjust(3) + "\n\n")
+    f.write("Portanvändning switchar:\n")
     f.write("-"*30 + "\n")
-    f.write("  Totalt: " + switchport_use_total + "/" + switchport_total + " portar används (" + switchport_use_percentage_str + "%)" + "\n\n")
+    f.write("  Totalt: " + (str(switchport_use["used_total"]))  + "/" + (str(switchport_use["total"])) + " portar används (" + (str(round((switchport_use["used_total"] / switchport_use["total"]) * 100))) + "%)" + "\n\n")
     f.write("VLAN översikt\n")
     f.write("-"*30 + "\n")
-    f.write("VLANs: " + vlan_sorted_str + "\n\n")
+    f.write("  VLANs: " + (", ".join(map(str, (sorted(vlan_used))))) + "\n\n")
     f.write("Statistik per site:\n")
     f.write("-"*30 + "\n")
     f.write(device_location_and_status)
     f.write("Switchportanvändning:\n")
-    f.write("Site".ljust(18) + "Använt/Totalt" +  "  Användning" "\n")
-    f.write(switchport_usage_site_parsed)
+    f.write("-"*30 + "\n")
+    f.write("  Site".ljust(18) + "Använt/Totalt" +  "  Användning" "\n")
+    f.write(switchport_usage_site_parsed + "\n\n")
