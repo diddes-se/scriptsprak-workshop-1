@@ -15,6 +15,7 @@ device_location_and_status = ""
 summary_devices_with_problems = {"offline": 0, "warning": 0, "low_uptime": 0, "high_port_usage": 0, "high_client_use": 0}
 high_switchport_usage_per_device = ""
 device_location_and_status = ""
+vlan_count ={"total": 0}
 
 # Read out data on devices
 for location in data["locations"]:
@@ -91,6 +92,7 @@ for location in data["locations"]:
         # Get all VLANs used
         if "vlans" in device:
             vlan_used.update(device["vlans"])
+            vlan_count["total"] += +1
         
         # Identify problems
         if "ports" in device:
@@ -201,6 +203,7 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("  Lastbalanserare:".ljust(20) + (str(counts["load_balancer"])).rjust(3) + "\n\n")
     f.write("VLAN översikt\n")
     f.write("-"*30 + "\n")
+    f.write("  Totalt antal VLAN: " + str(vlan_count["total"]) + "\n")
     f.write("  VLANs: " + (", ".join(map(str, (sorted(vlan_used))))) + "\n\n")
     f.write("Statistik per site:\n")
     f.write("-"*30 + "\n")
