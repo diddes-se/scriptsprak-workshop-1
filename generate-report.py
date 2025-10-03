@@ -7,7 +7,7 @@ data = json.load(open("network_devices.json","r",encoding = "utf-8"))
 # Create variables to hold report data
 devices_offline = ""
 devices_warning = ""
-counts = {"switch": 0, "router": 0, "access_point": 0, "load_balancer": 0}
+device_counts = {"switch": 0, "router": 0, "access_point": 0, "load_balancer": 0}
 low_uptime = ""
 switchport_use = {"total": 0, "used_total": 0}
 vlan_used = set()
@@ -63,13 +63,13 @@ for location in data["locations"]:
         
         # Count the total number of devices
         if device.get("type") == "switch":
-            counts["switch"] += +1
+            device_counts["switch"] += +1
         if device.get("type") == "router":
-            counts["router"] += +1
+            device_counts["router"] += +1
         if device.get("type") == "access_point":
-            counts["access_point"] += +1
+            device_counts["access_point"] += +1
         if device.get("type") == "load_balancer":
-            counts["load_balancer"] += +1
+            device_counts["load_balancer"] += +1
         
         # List devices witn less than 30 days uptime
         if device.get("uptime_days") <= 30:
@@ -197,10 +197,10 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("Antal enheter:\n")
     f.write("-"*30 + "\n")
     f.write("  Enhetstyp".ljust(18) + "Antal" "\n")
-    f.write("  Switch:".ljust(20) + (str(counts["switch"])).rjust(3) + "\n")
-    f.write("  Router:".ljust(20) + (str(counts["router"])).rjust(3) + "\n" )
-    f.write("  Accesspunkt:".ljust(20) + (str(counts["access_point"])).rjust(3) + "\n")
-    f.write("  Lastbalanserare:".ljust(20) + (str(counts["load_balancer"])).rjust(3) + "\n\n")
+    f.write("  Switch:".ljust(20) + (str(device_counts["switch"])).rjust(3) + "\n")
+    f.write("  Router:".ljust(20) + (str(device_counts["router"])).rjust(3) + "\n" )
+    f.write("  Accesspunkt:".ljust(20) + (str(device_counts["access_point"])).rjust(3) + "\n")
+    f.write("  Lastbalanserare:".ljust(20) + (str(device_counts["load_balancer"])).rjust(3) + "\n\n")
     f.write("VLAN översikt\n")
     f.write("-"*30 + "\n")
     f.write("  Totalt antal VLAN: " + str(vlan_count["total"]) + "\n")
