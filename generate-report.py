@@ -81,10 +81,12 @@ for location in data["locations"]:
             # Add one to problem summary
             summary_devices_with_problems["low_uptime"] += +1
 
-        # get the total number of switchports
+        # get the number of switchports
         if "ports" in device:
             switchport_use["total"] += device["ports"]["total"]
             switchport_use["used_total"] += device["ports"]["used"]         
+
+
 
         # Get all VLANs used
         if "vlans" in device:
@@ -101,7 +103,7 @@ for location in data["locations"]:
             if (port_usage_calc["used"] / port_usage_calc["total"]) * 100 > 80:
                 
                 # Add one to problem summary
-                summary_devices_with_problems["low_uptime"] += +1
+                summary_devices_with_problems["high_port_usage"] += +1
                 
                 high_switchport_usage_per_device += ("  " + device["hostname"].ljust(15) + " " 
                                                     + location["site"].ljust(15) 
@@ -171,6 +173,13 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("Nätverksrapport - " + data["company"] + "\n")
     f.write("="*50 + "\n")
     f.write("Senast uppdaterad: " + data["last_updated"].replace("T", " ") + "\n\n")
+    f.write("Executive summary \n")
+    f.write("-"*30 + "\n")
+    f.write("Kritiskt: ".ljust(10) + str(summary_devices_with_problems["offline"]).rjust(3) + " enheter offline \n" )
+    f.write("Varning: ".ljust(10) + str(summary_devices_with_problems["warning"]).rjust(3) + " enheter med varningstatus \n")
+    f.write(str(summary_devices_with_problems["low_uptime"]) + " enheter med låg uptime (<30 dagar) \n")
+    f.write(str(summary_devices_with_problems["high_port_usage"]) + " enheter med hög portanvändning \n")
+    f.write(str(summary_devices_with_problems["high_client_use"]) + " enheter med högt antal klienter \n\n")
     f.write("Enheter med problem:\n")
     f.write("-"*30 + "\n")
     f.write("Status: OFFLINE\n")
@@ -182,7 +191,7 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write(low_uptime + "\n")
     f.write("Switchar med hög portanvändning (>80%)\n")
     f.write("-"*30 + "\n")
-    f.write(high_switchport_usage_per_device + "\n\n")
+    f.write(high_switchport_usage_per_device + "\n")
     f.write("Antal enheter:\n")
     f.write("-"*30 + "\n")
     f.write("  Enhetstyp".ljust(18) + "Antal" "\n")
@@ -190,9 +199,6 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("  Router:".ljust(20) + (str(counts["router"])).rjust(3) + "\n" )
     f.write("  Accesspunkt:".ljust(20) + (str(counts["access_point"])).rjust(3) + "\n")
     f.write("  Lastbalanserare:".ljust(20) + (str(counts["load_balancer"])).rjust(3) + "\n\n")
-    f.write("Portanvändning switchar:\n")
-    f.write("-"*30 + "\n")
-    f.write("  Totalt: " + (str(switchport_use["used_total"]))  + "/" + (str(switchport_use["total"])) + " portar används (" + (str(round((switchport_use["used_total"] / switchport_use["total"]) * 100))) + "%)" + "\n\n")
     f.write("VLAN översikt\n")
     f.write("-"*30 + "\n")
     f.write("  VLANs: " + (", ".join(map(str, (sorted(vlan_used))))) + "\n\n")
@@ -202,4 +208,6 @@ with open('network_report.txt', 'w', encoding='utf-8') as f:
     f.write("Switchportanvändning:\n")
     f.write("-"*30 + "\n")
     f.write("  Site".ljust(18) + "Använt/Totalt" +  "  Användning" "\n")
-    f.write(switchport_usage_site_parsed + "\n\n")
+    f.write(switchport_usage_site_parsed + "\n")
+    f.write("  Totalt: " + (str(switchport_use["used_total"]))  + "/" + (str(switchport_use["total"])) 
+            + " portar används (" + (str(round((switchport_use["used_total"] / switchport_use["total"]) * 100))) + "%)" + "\n\n")
